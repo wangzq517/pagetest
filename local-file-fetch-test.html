@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Local-file rules fetch test</title>
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; margin: 2rem; max-width: 52rem; }
+  code, pre { background: #f4f4f4; padding: .2rem .4rem; }
+  pre { white-space: pre-wrap; padding: 1rem; }
+  .ok { color: #087443; } .error { color: #b42318; }
+</style>
+<h1>Local-file rules fetch test</h1>
+<p>Open this file directly from disk. It fetches the public GitHub Pages rules pack without cookies.</p>
+<p id="status">Fetching…</p>
+<pre id="output"></pre>
+<script>
+  const rulesUrl = "https://wangzq517.github.io/pagetest/rules.json";
+  const status = document.querySelector("#status");
+  const output = document.querySelector("#output");
+
+  async function loadRules() {
+    try {
+      const response = await fetch(rulesUrl, {
+        mode: "cors",
+        credentials: "omit",
+        cache: "no-store"
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
+      const rules = await response.json();
+      status.textContent = "Success: the local HTML read the remote rules pack.";
+      status.className = "ok";
+      output.textContent = JSON.stringify({
+        fetchedFrom: rulesUrl,
+        packVersion: rules.packVersion,
+        ruleCount: Array.isArray(rules.rules) ? rules.rules.length : 0,
+        rules
+      }, null, 2);
+    } catch (error) {
+      status.textContent = "Blocked or unavailable: the local HTML could not read the remote rules pack.";
+      status.className = "error";
+      output.textContent = `${error.name}: ${error.message}\n\nExpected server response header:\nAccess-Control-Allow-Origin: *`;
+    }
+  }
+
+  loadRules();
+</script>

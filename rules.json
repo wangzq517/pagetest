@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "packVersion": "0.1.0",
+  "rules": [
+    {
+      "id": "demo-high-heap",
+      "severity": "warning",
+      "when": { "field": "memory.heap.usedPercent", "gte": 85 },
+      "message": "Heap use is high; review memory pressure and recent traffic."
+    }
+  ]
+}
