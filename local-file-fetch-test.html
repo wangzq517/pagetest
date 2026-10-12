@@ -10,35 +10,58 @@
   .ok { color: #087443; } .error { color: #b42318; }
 </style>
 <h1>Local-file rules fetch test</h1>
-<p>Open this file directly from disk. It fetches the public GitHub Pages rules pack without cookies.</p>
-<p id="status">Fetching…</p>
+<p>Open this file directly from disk. It starts with the bundled rules pack, then attempts to replace it with the public GitHub Pages pack without cookies.</p>
+<p id="status">Loading bundled rules…</p>
 <pre id="output"></pre>
+<script id="bundled-rules" type="application/json">
+{
+  "schemaVersion": 1,
+  "packVersion": "0.1.0-bundled",
+  "rules": [
+    {
+      "id": "demo-high-heap",
+      "severity": "warning",
+      "when": { "field": "memory.heap.usedPercent", "gte": 85 },
+      "message": "Heap use is high; review memory pressure and recent traffic."
+    }
+  ]
+}
+</script>
 <script>
   const rulesUrl = "https://wangzq517.github.io/pagetest/rules.json";
   const status = document.querySelector("#status");
   const output = document.querySelector("#output");
+  const bundledRules = JSON.parse(document.querySelector("#bundled-rules").textContent);
+
+  function showRules(source, rules) {
+    output.textContent = JSON.stringify({
+      source,
+      packVersion: rules.packVersion,
+      ruleCount: Array.isArray(rules.rules) ? rules.rules.length : 0,
+      rules
+    }, null, 2);
+  }
 
   async function loadRules() {
+    status.textContent = "Using bundled rules while checking for an update…";
+    showRules("bundled in this HTML report", bundledRules);
     try {
       const response = await fetch(rulesUrl, {
         mode: "cors",
         credentials: "omit",
-        cache: "no-store"
+        cache: "no-store",
+        referrerPolicy: "no-referrer"
       });
       if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
       const rules = await response.json();
-      status.textContent = "Success: the local HTML read the remote rules pack.";
+      status.textContent = "Success: the remote rules pack replaced the bundled snapshot.";
       status.className = "ok";
-      output.textContent = JSON.stringify({
-        fetchedFrom: rulesUrl,
-        packVersion: rules.packVersion,
-        ruleCount: Array.isArray(rules.rules) ? rules.rules.length : 0,
-        rules
-      }, null, 2);
+      showRules(`remote update from ${rulesUrl}`, rules);
     } catch (error) {
-      status.textContent = "Blocked or unavailable: the local HTML could not read the remote rules pack.";
+      status.textContent = "Remote update unavailable: continuing with the bundled rules snapshot.";
       status.className = "error";
-      output.textContent = `${error.name}: ${error.message}\n\nExpected server response header:\nAccess-Control-Allow-Origin: *`;
+      showRules("bundled in this HTML report", bundledRules);
+      output.textContent += `\n\nRemote update failure: ${error.name}: ${error.message}`;
     }
   }
 
